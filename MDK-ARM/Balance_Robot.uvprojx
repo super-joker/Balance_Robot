@@ -444,6 +444,11 @@
               <FileType>1</FileType>
               <FilePath>..\Src\mpu6050.c</FilePath>
             </File>
+            <File>
+              <FileName>motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\motor.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

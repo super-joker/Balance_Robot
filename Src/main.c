@@ -132,33 +132,48 @@ void usart1_report_imu(short aacx,short aacy,short aacz,short gyrox,short gyroy,
 }  
 /* USER CODE END 0 */
 
+
+void SendUserWave(uint16_t data[],uint16_t len)
+{
+	if(data == NULL || len == 0 )
+		return;
+	
+	
+  uint8_t cnt = 0;
+  uint8_t databuffer[7];
+	uint8_t sum = 0, index = 0;
+	
+	
+  databuffer[cnt++] = 0xAA;
+  databuffer[cnt++] = 0xAA;
+  databuffer[cnt++] = 0xF1;
+  databuffer[cnt++] = len*2;
+	
+	for(index = 0; index < len; index++)
+	{
+		databuffer[cnt++] = (uint8_t)((data[index]>>8) & 0xFF);
+		databuffer[cnt++] = (uint8_t)(data[index] & 0xFF);
+		
+	}
+
+  for(index = 0; index < cnt; index++)
+  {
+    sum += databuffer[index];
+  }
+
+  databuffer[cnt++] = sum;
+  HAL_UART_Transmit(&huart1,databuffer,cnt,1000);
+
+}
 /**
   * @brief  The application entry point.
   * @retval int
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
@@ -166,31 +181,59 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
 
+  printf("Hello, Balance robot!\n");
+  HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_4);
 
-	printf("Hello, world1!\n");
-  while(MPU_Init())
-  {
-    printf("MPU Init fail.");
-    delay_ms(200);
-  }  
-  while(mpu_dmp_init())
-  {
-    printf("mpu_dmp_init fail:%d\n",mpu_dmp_init());
-    delay_ms(200);
-  }  
-	printf("Hello, world2!\n");
-	while(1)
-	{
-		mpu_dmp_get_data(&pitch,&roll,&yaw);
-		temp=MPU_Get_Temperature();	//?????
-		MPU_Get_Accelerometer(&aacx,&aacy,&aacz);	//??????????
-		MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);	//???????
+  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
+	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
+	uint16_t index = 0;
+	uint16_t wave_data[4] = {0};
+	int target_speed = 0;
+	int pid_speed_pwm = 0;
+	int encoder_a = 0, encoder_b = 0;
+
+	
+  while(1)
+  { 
+		
+
+		encoder_a = ReadEncoderA();
+		pid_speed_pwm = CalVelocity(encoder_a, target_speed);
+		SetMotorA(pid_speed_pwm);
+		wave_data[0] = target_speed;
+		wave_data[1] = pid_speed_pwm;
+		wave_data[2] = encoder_a;
+		wave_data[3] = encoder_b;
+		SendUserWave(wave_data,4);
+		
+		
+    HAL_Delay(10);
+  
+  }
+//	printf("Hello, world1!\n");
+//  while(MPU_Init())
+//  {
+//    printf("MPU Init fail.");
+//    delay_ms(200);
+//  }  
+//  while(mpu_dmp_init())
+//  {
+//    printf("mpu_dmp_init fail:%d\n",mpu_dmp_init());
+//    delay_ms(200);
+//  }  
+//	printf("Hello, world2!\n");
+//	while(1)
+//	{
+//		mpu_dmp_get_data(&pitch,&roll,&yaw);
+//		temp=MPU_Get_Temperature();	//?????
+//		MPU_Get_Accelerometer(&aacx,&aacy,&aacz);	//??????????
+//		MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);	//???????
 
 
-    mpu6050_send_data(aacx,aacy,aacz,gyrox,gyroy,gyroz);//??????????????????
-    usart1_report_imu(aacx,aacy,aacz,gyrox,gyroy,gyroz,(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
-	}
-  /* USER CODE END 3 */
+//    mpu6050_send_data(aacx,aacy,aacz,gyrox,gyroy,gyroz);//??????????????????
+//    usart1_report_imu(aacx,aacy,aacz,gyrox,gyroy,gyroz,(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
+//	}
 }
 
 /**

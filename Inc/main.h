@@ -41,6 +41,8 @@ extern "C" {
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h" 
 #include "mpu6050.h"
+#include "motor.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 

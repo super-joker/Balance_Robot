@@ -1,6 +1,4 @@
 #include "motor.h"
-
-
 #include "main.h"
 /**
  * 
@@ -33,9 +31,6 @@ void SetMotorA(int speed)
   }
   __HAL_TIM_SetCompare(&htim1,TIM_CHANNEL_1,abs(speed));
 }
-
-
-
 
 
 int ReadEncoderA(void)

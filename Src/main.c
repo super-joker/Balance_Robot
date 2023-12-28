@@ -189,7 +189,7 @@ int main(void)
 	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
 	uint16_t index = 0;
 	uint16_t wave_data[4] = {0};
-	int target_speed = 0;
+	int target_speed = 60;
 	int pid_speed_pwm = 0;
 	int encoder_a = 0, encoder_b = 0;
 

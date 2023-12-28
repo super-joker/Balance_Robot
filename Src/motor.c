@@ -9,9 +9,14 @@
 */
 
 
-float velocity_kp = -40;
-float velocity_ki = -5;
-	
+//float velocity_kp = -40;
+//float velocity_ki = -5;
+
+//float velocity_kp = -10;
+//float velocity_ki = -3.5;
+
+float velocity_kp = -15;
+float velocity_ki = -3;
 void SetMotorA(int speed)
 {
   if(speed >= MAX_SPEED)
@@ -55,10 +60,12 @@ int CalVelocity(int encoder, int target_speed)
 {
 	static float velocity, current_encoder;
 	static float encoder_integral;
-	current_encoder = current_encoder*0.8 + ((encoder - target_speed) * 0.2);
-
+	// current_encoder = current_encoder*0.8 + ((encoder - target_speed) * 0.2);
+	current_encoder = encoder - target_speed;
 	encoder_integral += current_encoder;
 
+	velocity_ki = -7 + (target_speed / 20);
+	
 	if(encoder_integral > 10000) encoder_integral = 10000;
 	if(encoder_integral < -10000) encoder_integral = -10000;
 	velocity = current_encoder * velocity_kp + encoder_integral * velocity_ki;

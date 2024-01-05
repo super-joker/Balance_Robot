@@ -10,14 +10,15 @@
 
 
 void SetMotorA(int speed);
+void SetMotorB(int speed);
 int ReadEncoderA(void);
+int ReadEncoderB(void);
 
 
 
 
-
-int CalVelocity(int encoder, int target_speed);
-
+int CalVelocityA(int encoder, int target_speed);
+int CalVelocityB(int encoder, int target_speed);
 
 
 

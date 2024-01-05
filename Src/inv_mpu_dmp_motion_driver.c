@@ -41,8 +41,8 @@
 //#include "msp430_clock.h"
 #define delay_ms    delay_ms
 #define get_ms      mget_ms
-#define log_i 		printf
-#define log_e  		printf
+#define log_i 		debug_printf
+#define log_e  		debug_printf
 
 #elif defined EMPL_TARGET_MSP430
 #include "msp430.h"

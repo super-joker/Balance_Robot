@@ -18,6 +18,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -58,7 +62,7 @@ short aacx,aacy,aacz;		//加速度传感器原始数据
 short gyrox,gyroy,gyroz;	//陀螺仪原始数据
 short temp;					//温度	    
 
-
+int debug_printf(const char *format,...);
 
 //传送数据给匿名四轴上位机软件(V2.6版本)
 //fun:功能字. 0XA0~0XAF
@@ -75,7 +79,8 @@ void usart1_niming_report(u8 fun,u8*data,u8 len)
 	send_buf[2]=len;	//数据长度
 	for(i=0;i<len;i++)send_buf[3+i]=data[i];			//复制数据
 	for(i=0;i<len+3;i++)send_buf[len+3]+=send_buf[i];	//计算校验和	
-	for(i=0;i<len+4;i++)HAL_UART_Transmit(&huart1,send_buf,32,1000);	//发送数据到串口1 
+	//for(i=0;i<len+4;i++)HAL_UART_Transmit(&huart1,send_buf,32,1000);	//发送数据到串口1 
+	for(i=0;i<len+4;i++)HAL_UART_Transmit_DMA(&huart1,send_buf,32); 	//发送数据到串口1 
 }
 
 //发送加速度传感器数据和陀螺仪数据
@@ -162,7 +167,8 @@ void SendUserWave(uint16_t data[],uint16_t len)
   }
 
   databuffer[cnt++] = sum;
-  HAL_UART_Transmit(&huart1,databuffer,cnt,1000);
+  //HAL_UART_Transmit(&huart1,databuffer,cnt,1000);
+  HAL_UART_Transmit_DMA(&huart1,databuffer,cnt);
 
 }
 /**
@@ -181,7 +187,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
 
-  printf("Hello, Balance robot!\n");
+  //debug_printf("Hello, Balance robot!\n");
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_4);
 
@@ -189,51 +195,69 @@ int main(void)
 	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
 	uint16_t index = 0;
 	uint16_t wave_data[4] = {0};
-	int target_speed = 60;
-	int pid_speed_pwm = 0;
+	int target_speed_a = 40;
+	int target_speed_b = 40;
+	int pid_speed_pwm_a = 0;
+  int pid_speed_pwm_b = 0;
 	int encoder_a = 0, encoder_b = 0;
 
 	
-  while(1)
-  { 
-		
 
-		encoder_a = ReadEncoderA();
-		pid_speed_pwm = CalVelocity(encoder_a, target_speed);
-		SetMotorA(pid_speed_pwm);
-		wave_data[0] = target_speed;
-		wave_data[1] = pid_speed_pwm;
-		wave_data[2] = encoder_a;
-		wave_data[3] = encoder_b;
-		SendUserWave(wave_data,4);
-		
-		
-    HAL_Delay(10);
-  
-  }
-//	printf("Hello, world1!\n");
+
 //  while(MPU_Init())
 //  {
-//    printf("MPU Init fail.");
+//    debug_printf("MPU Init fail.");
 //    delay_ms(200);
 //  }  
 //  while(mpu_dmp_init())
 //  {
-//    printf("mpu_dmp_init fail:%d\n",mpu_dmp_init());
+//    debug_printf("mpu_dmp_init fail:%d\n",mpu_dmp_init());
 //    delay_ms(200);
 //  }  
-//	printf("Hello, world2!\n");
-//	while(1)
-//	{
+
+	
+	debug_printf("Hello, world1!\n");
+	
+	debug_printf("Hello, world2!\n");
+//	char buffer1[] = "123456789\n";
+//	char buffer2[] = "1234567891111\n";
+//	HAL_UART_Transmit_DMA(&huart1, (uint8_t *)buffer1, strlen(buffer1));
+//	delay_us(500);
+//	HAL_UART_Transmit_DMA(&huart1, (uint8_t *)buffer2, strlen(buffer2));
+//	
+//	uint8_t aTxBuffer[] = " **111*** ";
+
+//	HAL_UART_Transmit_DMA(&huart1, aTxBuffer, 10);
+//		
+	while(1)
+	{
+//	HAL_UART_Transmit_DMA(&huart1, (uint8_t *)buffer1, strlen(buffer1));
+//	HAL_UART_Transmit_DMA(&huart1, (uint8_t *)buffer2, strlen(buffer2));
+	
+	
 //		mpu_dmp_get_data(&pitch,&roll,&yaw);
 //		temp=MPU_Get_Temperature();	//?????
 //		MPU_Get_Accelerometer(&aacx,&aacy,&aacz);	//??????????
 //		MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);	//???????
-
-
 //    mpu6050_send_data(aacx,aacy,aacz,gyrox,gyroy,gyroz);//??????????????????
 //    usart1_report_imu(aacx,aacy,aacz,gyrox,gyroy,gyroz,(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
-//	}
+
+//		encoder_a = ReadEncoderA();
+//    encoder_b = ReadEncoderB();
+//		pid_speed_pwm_a = CalVelocityA(encoder_a, target_speed_a);
+//    //pid_speed_pwm_b = CalVelocityB(encoder_b, target_speed_b);
+//		SetMotorA(pid_speed_pwm_a);
+//    //SetMotorB(pid_speed_pwm_b);
+//		wave_data[0] = target_speed_a;
+//		wave_data[1] = pid_speed_pwm_a;
+//		wave_data[2] = encoder_a;
+//		wave_data[3] = encoder_b;
+//		SendUserWave(wave_data,4);
+//		
+		
+    HAL_Delay(10);
+		
+	}
 }
 
 /**
@@ -275,12 +299,45 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-int fputc(int ch,FILE *f)
+
+
+
+
+
+
+
+
+int debug_printf(const char *format,...)
 {
-    uint8_t temp[1]={ch};
-    HAL_UART_Transmit(&huart1,temp,1,1000);       
-		return 0;
+  va_list args;
+  static char sendbuffer[1000];
+  int rv;
+  while(!usart_dma_tx_over);
+  usart_dma_tx_over = 0;
+	
+  va_start(args,format);
+  rv = vsnprintf((char*)sendbuffer,sizeof(sendbuffer),format,args);
+  va_end(args);
+ 
+  //HAL_UART_Transmit_DMA(&huart1,(uint8_t *)sendbuffer,rv);
+	HAL_UART_Transmit_DMA(&huart1, (uint8_t *)sendbuffer, strlen(sendbuffer));
+  
+ 
+
+  return rv;
 }
+
+
+
+
+
+
+
+
+
+
+
+
 void delay_us(uint32_t us)
 {
 	while(us--)
@@ -329,7 +386,7 @@ void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+     ex: debug_printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

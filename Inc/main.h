@@ -73,6 +73,10 @@ void delay_ms(uint32_t ms);
 
 /* Private defines -----------------------------------------------------------*/
 
+/* Exported macro ------------------------------------------------------------*/
+#define COUNTOF(__BUFFER__)   (sizeof(__BUFFER__) / sizeof(*(__BUFFER__)))
+
+int debug_printf(const char *format,...);
 
 #define EncoderB_2_Pin GPIO_PIN_0
 #define EncoderB_2_GPIO_Port GPIOA

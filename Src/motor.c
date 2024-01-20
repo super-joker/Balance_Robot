@@ -9,16 +9,13 @@
 */
 
 
-//float velocity_kp = -40;
-//float velocity_ki = -5;
-
-//float velocity_kp = -10;
-//float velocity_ki = -3.5;
-
 float velocity_kp_a = -15;
 float velocity_ki_a = -3;
 float velocity_kp_b = -15;
 float velocity_ki_b = -3;
+float balance_kp = 100;
+float balance_kd = 0.35;
+
 void SetMotorA(int speed)
 {
   if(speed >= MAX_SPEED)
@@ -51,7 +48,6 @@ int ReadEncoderA(void)
 	}
 	
   __HAL_TIM_SET_COUNTER(&htim3,0);
-	debug_printf("countA:%d.\n",(int)count);
   return count;
 }
 
@@ -89,11 +85,8 @@ int ReadEncoderB(void)
 	}
 	
   __HAL_TIM_SET_COUNTER(&htim2,0);
-	debug_printf("countB:%d.\n",(int)count);
   return count;
 }
-
-
 
 
 
@@ -101,16 +94,14 @@ int CalVelocityA(int encoder, int target_speed)
 {
 	static float velocity_a, current_encoder_a;
 	static float encoder_integral_a;
-	// current_encoder_a = current_encoder_a*0.8 + ((encoder - target_speed) * 0.2);
 	current_encoder_a = encoder - target_speed;
 	encoder_integral_a += current_encoder_a;
 
-	velocity_ki_a = -7 + (target_speed / 20);
+	velocity_ki_a = -8.2 + (target_speed / 20);
 	
 	if(encoder_integral_a > 10000) encoder_integral_a = 10000;
 	if(encoder_integral_a < -10000) encoder_integral_a = -10000;
 	velocity_a = current_encoder_a * velocity_kp_a + encoder_integral_a * velocity_ki_a;
-	debug_printf("A:encode:%d,encoder_integral_a:%d.velocity_a:%d.\n",(int)encoder,(int)encoder_integral_a,(int)velocity_a);
 	return velocity_a;
 }
 
@@ -119,11 +110,10 @@ int CalVelocityB(int encoder, int target_speed)
 {
 	static float velocity_b, current_encoder_b;
 	static float encoder_integral_b;
-	// current_encoder_b = current_encoder_b*0.8 + ((encoder - target_speed) * 0.2);
 	current_encoder_b = encoder - target_speed;
 	encoder_integral_b += current_encoder_b;
 
-	velocity_ki_b = -7 + (target_speed / 20);
+	velocity_ki_a = -8.2 + (target_speed / 20);
 	
 	if(encoder_integral_b > 10000) encoder_integral_b = 10000;
 	if(encoder_integral_b < -10000) encoder_integral_b = -10000;
@@ -131,23 +121,10 @@ int CalVelocityB(int encoder, int target_speed)
 	return velocity_b;
 }
 
-//int CalVelocity(int encoder, int target_speed)
-//{
-//	static float velocity, current_encoder;
-//	static float encoder_integral;
-//	current_encoder = current_encoder*0.8 + (encoder * 0.2);
 
-//	encoder_integral += current_encoder;
-//	encoder_integral -= target_speed;
-//	
-//	if(encoder_integral > 10000) encoder_integral = 10000;
-//	if(encoder_integral < -10000) encoder_integral = -10000;
-//	velocity = current_encoder * velocity_kp + encoder_integral * velocity_ki;
-//	//debug_printf("encode:%d,encoder_integral:%d.velocity:%d.\n",(int)encoder,(int)encoder_integral,(int)velocity);
-//	return velocity;
-//}
-
-
-
-
+int CalBalance(float angle,float mechanical_balance,float gyro)
+{  
+	 float bias = angle-mechanical_balance;    							 //===求出平衡的角度中值和机械相关
+	 return balance_kp * bias + balance_kd * gyro;          //===计算平衡控制的电机PWM  PD控制   kp是P系数 kd是D系数 
+}
 

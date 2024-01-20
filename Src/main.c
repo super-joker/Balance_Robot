@@ -64,79 +64,6 @@ short temp;					//温度
 
 int debug_printf(const char *format,...);
 
-//传送数据给匿名四轴上位机软件(V2.6版本)
-//fun:功能字. 0XA0~0XAF
-//data:数据缓存区,最多28字节!!
-//len:data区有效数据个数
-void usart1_niming_report(u8 fun,u8*data,u8 len)
-{
-	u8 send_buf[32];
-	u8 i;
-	if(len>28)return;	//最多28字节数据 
-	send_buf[len+3]=0;	//校验数置零
-	send_buf[0]=0X88;	//帧头
-	send_buf[1]=fun;	//功能字
-	send_buf[2]=len;	//数据长度
-	for(i=0;i<len;i++)send_buf[3+i]=data[i];			//复制数据
-	for(i=0;i<len+3;i++)send_buf[len+3]+=send_buf[i];	//计算校验和	
-	//for(i=0;i<len+4;i++)HAL_UART_Transmit(&huart1,send_buf,32,1000);	//发送数据到串口1 
-	for(i=0;i<len+4;i++)HAL_UART_Transmit_DMA(&huart1,send_buf,32); 	//发送数据到串口1 
-}
-
-//发送加速度传感器数据和陀螺仪数据
-//aacx,aacy,aacz:x,y,z三个方向上面的加速度值
-//gyrox,gyroy,gyroz:x,y,z三个方向上面的陀螺仪值
-void mpu6050_send_data(short aacx,short aacy,short aacz,short gyrox,short gyroy,short gyroz)
-{
-	u8 tbuf[12]; 
-	tbuf[0]=(aacx>>8)&0XFF;
-	tbuf[1]=aacx&0XFF;
-	tbuf[2]=(aacy>>8)&0XFF;
-	tbuf[3]=aacy&0XFF;
-	tbuf[4]=(aacz>>8)&0XFF;
-	tbuf[5]=aacz&0XFF; 
-	tbuf[6]=(gyrox>>8)&0XFF;
-	tbuf[7]=gyrox&0XFF;
-	tbuf[8]=(gyroy>>8)&0XFF;
-	tbuf[9]=gyroy&0XFF;
-	tbuf[10]=(gyroz>>8)&0XFF;
-	tbuf[11]=gyroz&0XFF;
-	usart1_niming_report(0XA1,tbuf,12);//自定义帧,0XA1
-}	
-
-//通过串口1上报结算后的姿态数据给电脑
-//aacx,aacy,aacz:x,y,z三个方向上面的加速度值
-//gyrox,gyroy,gyroz:x,y,z三个方向上面的陀螺仪值
-//roll:横滚角.单位0.01度。 -18000 -> 18000 对应 -180.00  ->  180.00度
-//pitch:俯仰角.单位 0.01度。-9000 - 9000 对应 -90.00 -> 90.00 度
-//yaw:航向角.单位为0.1度 0 -> 3600  对应 0 -> 360.0度
-void usart1_report_imu(short aacx,short aacy,short aacz,short gyrox,short gyroy,short gyroz,short roll,short pitch,short yaw)
-{
-	u8 tbuf[28]; 
-	u8 i;
-	for(i=0;i<28;i++)tbuf[i]=0;//清0
-	tbuf[0]=(aacx>>8)&0XFF;
-	tbuf[1]=aacx&0XFF;
-	tbuf[2]=(aacy>>8)&0XFF;
-	tbuf[3]=aacy&0XFF;
-	tbuf[4]=(aacz>>8)&0XFF;
-	tbuf[5]=aacz&0XFF; 
-	tbuf[6]=(gyrox>>8)&0XFF;
-	tbuf[7]=gyrox&0XFF;
-	tbuf[8]=(gyroy>>8)&0XFF;
-	tbuf[9]=gyroy&0XFF;
-	tbuf[10]=(gyroz>>8)&0XFF;
-	tbuf[11]=gyroz&0XFF;	
-	tbuf[18]=(roll>>8)&0XFF;
-	tbuf[19]=roll&0XFF;
-	tbuf[20]=(pitch>>8)&0XFF;
-	tbuf[21]=pitch&0XFF;
-	tbuf[22]=(yaw>>8)&0XFF;
-	tbuf[23]=yaw&0XFF;
-	usart1_niming_report(0XAF,tbuf,28);//飞控显示帧,0XAF
-}  
-/* USER CODE END 0 */
-
 
 void SendUserWave(uint16_t data[],uint16_t len)
 {
@@ -187,7 +114,6 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
 
-  //debug_printf("Hello, Balance robot!\n");
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_4);
 
@@ -195,66 +121,64 @@ int main(void)
 	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
 	uint16_t index = 0;
 	uint16_t wave_data[4] = {0};
-	int target_speed_a = 40;
-	int target_speed_b = 40;
+	int target_speed_a = 0;
+	int target_speed_b = 0;
 	int pid_speed_pwm_a = 0;
   int pid_speed_pwm_b = 0;
 	int encoder_a = 0, encoder_b = 0;
 
+  int pid_speed_balance_a = 0;
+  int pid_speed_balance_b = 0;
 	
 
 
-//  while(MPU_Init())
-//  {
-//    debug_printf("MPU Init fail.");
-//    delay_ms(200);
-//  }  
-//  while(mpu_dmp_init())
-//  {
-//    debug_printf("mpu_dmp_init fail:%d\n",mpu_dmp_init());
-//    delay_ms(200);
-//  }  
+  while(MPU_Init())
+  {
+    debug_printf("MPU Init fail.");
+    delay_ms(200);
+  }  
+  while(mpu_dmp_init())
+  {
+    debug_printf("mpu_dmp_init fail:%d\n",mpu_dmp_init());
+    delay_ms(200);
+  }  
 
 	
-	debug_printf("Hello, world1!\n");
 	
-	debug_printf("Hello, world2!\n");
-//	char buffer1[] = "123456789\n";
-//	char buffer2[] = "1234567891111\n";
-//	HAL_UART_Transmit_DMA(&huart1, (uint8_t *)buffer1, strlen(buffer1));
-//	delay_us(500);
-//	HAL_UART_Transmit_DMA(&huart1, (uint8_t *)buffer2, strlen(buffer2));
-//	
-//	uint8_t aTxBuffer[] = " **111*** ";
-
-//	HAL_UART_Transmit_DMA(&huart1, aTxBuffer, 10);
-//		
+	//gyroy
 	while(1)
 	{
-//	HAL_UART_Transmit_DMA(&huart1, (uint8_t *)buffer1, strlen(buffer1));
-//	HAL_UART_Transmit_DMA(&huart1, (uint8_t *)buffer2, strlen(buffer2));
-	
-	
-//		mpu_dmp_get_data(&pitch,&roll,&yaw);
-//		temp=MPU_Get_Temperature();	//?????
-//		MPU_Get_Accelerometer(&aacx,&aacy,&aacz);	//??????????
-//		MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);	//???????
+		mpu_dmp_get_data(&pitch,&roll,&yaw);
+		MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);	//陀螺仪
+		
+		// debug_printf("pitch:%f,roll:%f,yaw:%f,gyrox:%d,gyroy:%d,gyroz:%d\n",pitch,roll,yaw,gyrox,gyroy,gyroz);
 //    mpu6050_send_data(aacx,aacy,aacz,gyrox,gyroy,gyroz);//??????????????????
 //    usart1_report_imu(aacx,aacy,aacz,gyrox,gyroy,gyroz,(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
 
-//		encoder_a = ReadEncoderA();
-//    encoder_b = ReadEncoderB();
-//		pid_speed_pwm_a = CalVelocityA(encoder_a, target_speed_a);
-//    //pid_speed_pwm_b = CalVelocityB(encoder_b, target_speed_b);
-//		SetMotorA(pid_speed_pwm_a);
-//    //SetMotorB(pid_speed_pwm_b);
+		encoder_a = ReadEncoderA();
+    encoder_b = ReadEncoderB();
+		pid_speed_pwm_a = CalVelocityA(encoder_a, target_speed_a);
+    pid_speed_pwm_b = CalVelocityB(encoder_b, target_speed_b);
+		SetMotorA(pid_speed_pwm_a);
+    SetMotorB(-pid_speed_pwm_b);
 //		wave_data[0] = target_speed_a;
-//		wave_data[1] = pid_speed_pwm_a;
-//		wave_data[2] = encoder_a;
-//		wave_data[3] = encoder_b;
-//		SendUserWave(wave_data,4);
-//		
-		
+//		wave_data[1] = encoder_a;
+//		wave_data[2] = encoder_b;
+//		wave_data[3] = encoder_a;
+//		SendUserWave(wave_data,4);	
+
+
+    pid_speed_balance_a = CalBalance(pitch,0,gyroy);
+    pid_speed_balance_b = CalBalance(pitch,0,gyroy);
+
+    SetMotorA(pid_speed_balance_a + pid_speed_pwm_a);
+    SetMotorB(-pid_speed_balance_b - pid_speed_pwm_b);
+	
+	  //debug_printf("pitch:%f,gyroy:%d\n",pitch,gyroy );
+//		wave_data[0] = 0;
+//		wave_data[1] = pitch;
+//		wave_data[3] = pid_speed_balance_a;
+//		SendUserWave(wave_data,4);	
     HAL_Delay(10);
 		
 	}
@@ -312,8 +236,8 @@ int debug_printf(const char *format,...)
   va_list args;
   static char sendbuffer[1000];
   int rv;
-  while(!usart_dma_tx_over);
-  usart_dma_tx_over = 0;
+  // while(!usart_dma_tx_over);
+  // usart_dma_tx_over = 0;
 	
   va_start(args,format);
   rv = vsnprintf((char*)sendbuffer,sizeof(sendbuffer),format,args);

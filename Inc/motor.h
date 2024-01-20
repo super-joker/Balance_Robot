@@ -19,7 +19,7 @@ int ReadEncoderB(void);
 
 int CalVelocityA(int encoder, int target_speed);
 int CalVelocityB(int encoder, int target_speed);
-
+int CalBalance(float angle,float mechanical_balance,float gyro);
 
 
 

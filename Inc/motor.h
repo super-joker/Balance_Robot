@@ -17,11 +17,11 @@ int ReadEncoderB(void);
 
 
 
-int CalVelocityA(int encoder, int target_speed);
+// int CalVelocityA(int encoder, int target_speed);
 int CalVelocityB(int encoder, int target_speed);
-int CalBalance(float angle,float mechanical_balance,float gyro);
+int CalBalance(float angle,float mechanical_balance,short gyro);
 
-
+int CalVelocity(int encoder_a,int encouder_b, int target_speed);
 
 #endif /* __MOTOR_H */
 

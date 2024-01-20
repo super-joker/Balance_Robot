@@ -50,7 +50,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+extern uint8_t gStartAllControl;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -117,6 +117,9 @@ int debug_printf(const char *format,...);
 #define TRIG_GPIO_Port GPIOB
 #define ECHO_Pin GPIO_PIN_7
 #define ECHO_GPIO_Port GPIOB
+#define LED_Pin GPIO_PIN_9
+#define LED_GPIO_Port GPIOB
+
 
 /* USER CODE BEGIN Private defines */
 

@@ -57,47 +57,12 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-float pitch,roll,yaw; 		//欧拉角
-short aacx,aacy,aacz;		//加速度传感器原始数据
-short gyrox,gyroy,gyroz;	//陀螺仪原始数据
-short temp;					//温度	    
+	    
 
 int debug_printf(const char *format,...);
+uint8_t gStartAllControl = 0;
 
 
-void SendUserWave(uint16_t data[],uint16_t len)
-{
-	if(data == NULL || len == 0 )
-		return;
-	
-	
-  uint8_t cnt = 0;
-  uint8_t databuffer[7];
-	uint8_t sum = 0, index = 0;
-	
-	
-  databuffer[cnt++] = 0xAA;
-  databuffer[cnt++] = 0xAA;
-  databuffer[cnt++] = 0xF1;
-  databuffer[cnt++] = len*2;
-	
-	for(index = 0; index < len; index++)
-	{
-		databuffer[cnt++] = (uint8_t)((data[index]>>8) & 0xFF);
-		databuffer[cnt++] = (uint8_t)(data[index] & 0xFF);
-		
-	}
-
-  for(index = 0; index < cnt; index++)
-  {
-    sum += databuffer[index];
-  }
-
-  databuffer[cnt++] = sum;
-  //HAL_UART_Transmit(&huart1,databuffer,cnt,1000);
-  HAL_UART_Transmit_DMA(&huart1,databuffer,cnt);
-
-}
 /**
   * @brief  The application entry point.
   * @retval int
@@ -120,47 +85,38 @@ int main(void)
   HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
 	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
 	uint16_t index = 0;
-	uint16_t wave_data[4] = {0};
-	int target_speed_a = 0;
-	int target_speed_b = 0;
-	int pid_speed_pwm_a = 0;
-  int pid_speed_pwm_b = 0;
-	int encoder_a = 0, encoder_b = 0;
-
-  int pid_speed_balance_a = 0;
-  int pid_speed_balance_b = 0;
-	
 
 
-  while(MPU_Init())
+  LED_OFF();
+	while(MPU_Init())
   {
-    debug_printf("MPU Init fail.");
-    delay_ms(200);
-  }  
-  while(mpu_dmp_init())
+    HAL_Delay(200);
+  }
+	while(mpu_dmp_init())
   {
-    debug_printf("mpu_dmp_init fail:%d\n",mpu_dmp_init());
-    delay_ms(200);
-  }  
-
-	
+    HAL_Delay(200);
+  }
+	gStartAllControl = 1;
+	LED_ON();
 	
 	//gyroy
 	while(1)
 	{
-		mpu_dmp_get_data(&pitch,&roll,&yaw);
-		MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);	//陀螺仪
-		
+
+
 		// debug_printf("pitch:%f,roll:%f,yaw:%f,gyrox:%d,gyroy:%d,gyroz:%d\n",pitch,roll,yaw,gyrox,gyroy,gyroz);
 //    mpu6050_send_data(aacx,aacy,aacz,gyrox,gyroy,gyroz);//??????????????????
 //    usart1_report_imu(aacx,aacy,aacz,gyrox,gyroy,gyroz,(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
 
-		encoder_a = ReadEncoderA();
-    encoder_b = ReadEncoderB();
-		pid_speed_pwm_a = CalVelocityA(encoder_a, target_speed_a);
-    pid_speed_pwm_b = CalVelocityB(encoder_b, target_speed_b);
-		SetMotorA(pid_speed_pwm_a);
-    SetMotorB(-pid_speed_pwm_b);
+		// encoder_a = ReadEncoderA();
+    // encoder_b = ReadEncoderB();
+		
+		//debug_printf("encoder_a:%d,encoder_b:%d\n",encoder_a,encoder_b);
+		
+//		pid_speed_pwm_a = CalVelocityA(encoder_a, target_speed_a);
+//    pid_speed_pwm_b = CalVelocityB(encoder_b, target_speed_b);
+//		SetMotorA(pid_speed_pwm_a);
+//    SetMotorB(-pid_speed_pwm_b);
 //		wave_data[0] = target_speed_a;
 //		wave_data[1] = encoder_a;
 //		wave_data[2] = encoder_b;
@@ -168,12 +124,15 @@ int main(void)
 //		SendUserWave(wave_data,4);	
 
 
-    pid_speed_balance_a = CalBalance(pitch,0,gyroy);
-    pid_speed_balance_b = CalBalance(pitch,0,gyroy);
+//    pid_speed_balance_a = CalBalance(pitch,0,gyroy);
+//    pid_speed_balance_b = CalBalance(pitch,0,gyroy);
 
-    SetMotorA(pid_speed_balance_a + pid_speed_pwm_a);
-    SetMotorB(-pid_speed_balance_b - pid_speed_pwm_b);
+//    SetMotorA(pid_speed_balance_a + pid_speed_pwm_a);
+//    SetMotorB(-pid_speed_balance_b - pid_speed_pwm_b);
 	
+	
+		// SetMotorA(300);
+    // SetMotorB(-300);
 	  //debug_printf("pitch:%f,gyroy:%d\n",pitch,gyroy );
 //		wave_data[0] = 0;
 //		wave_data[1] = pitch;
